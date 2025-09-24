@@ -23,6 +23,9 @@ CREATE TABLE books (
     author VARCHAR(150),
     subject VARCHAR(100),
     available BOOLEAN DEFAULT TRUE,
+    isbn VARCHAR(50) UNIQUE,
+    published_year INT,
+    copies INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- =========================
