@@ -10,14 +10,14 @@ include_once __DIR__ . "/../Config/config.php";
 // Connect to database
 $conn = getDbConnection();
 
-// Determine action (search, add, edit, delete)
+// Determine action (list, search, add, edit, delete)
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // 📖 Search / Get all books
+    // 📖 List all books
     case 'list':
-        $result = $conn->query("SELECT * FROM books");
+        $result = $conn->query("SELECT * FROM books ORDER BY created_at DESC");
         $books = $result->fetch_all(MYSQLI_ASSOC);
 
         echo json_encode([
@@ -26,12 +26,12 @@ switch ($action) {
         ]);
         break;
 
-    // 🔍 Search a book by title or author
+    // 🔍 Search books by title, author, or subject
     case 'search':
         $query = $_GET['q'] ?? '';
-        $stmt = $conn->prepare("SELECT * FROM books WHERE title LIKE ? OR author LIKE ?");
+        $stmt = $conn->prepare("SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR subject LIKE ?");
         $like = "%" . $query . "%";
-        $stmt->bind_param("ss", $like, $like);
+        $stmt->bind_param("sss", $like, $like, $like);
         $stmt->execute();
         $result = $stmt->get_result();
         $books = $result->fetch_all(MYSQLI_ASSOC);
@@ -42,7 +42,7 @@ switch ($action) {
         ]);
         break;
 
-    // ➕ Add new book
+    // ➕ Add a new book
     case 'add':
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -51,13 +51,22 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("INSERT INTO books (title, author, isbn, published_year, copies) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssii", $data['title'], $data['author'], $data['isbn'], $data['published_year'], $data['copies']);
-        
+        $stmt = $conn->prepare("INSERT INTO books (title, author, subject, available, isbn, published_year, copies) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param(
+            "sssissi",
+            $data['title'],
+            $data['author'],
+            $data['subject'],
+            $data['available'],
+            $data['isbn'],
+            $data['published_year'],
+            $data['copies']
+        );
+
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Book added successfully"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Error adding book"]);
+            echo json_encode(["status" => "error", "message" => "Error adding book: " . $conn->error]);
         }
         break;
 
@@ -71,13 +80,23 @@ switch ($action) {
             exit;
         }
 
-        $stmt = $conn->prepare("UPDATE books SET title=?, author=?, isbn=?, published_year=?, copies=? WHERE id=?");
-        $stmt->bind_param("sssiii", $data['title'], $data['author'], $data['isbn'], $data['published_year'], $data['copies'], $id);
+        $stmt = $conn->prepare("UPDATE books SET title=?, author=?, subject=?, available=?, isbn=?, published_year=?, copies=? WHERE id=?");
+        $stmt->bind_param(
+            "sssissii",
+            $data['title'],
+            $data['author'],
+            $data['subject'],
+            $data['available'],
+            $data['isbn'],
+            $data['published_year'],
+            $data['copies'],
+            $id
+        );
 
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Book updated successfully"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Error updating book"]);
+            echo json_encode(["status" => "error", "message" => "Error updating book: " . $conn->error]);
         }
         break;
 
@@ -96,7 +115,7 @@ switch ($action) {
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Book deleted successfully"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Error deleting book"]);
+            echo json_encode(["status" => "error", "message" => "Error deleting book: " . $conn->error]);
         }
         break;
 
