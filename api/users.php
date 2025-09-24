@@ -5,16 +5,11 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET");
 header("Access-Control-Allow-Headers: Content-Type");
 
-// Include database config
-include_once __DIR__ . "/../config/config.php";
+// Include database config with getDbConnection()
+require_once __DIR__ . "/../config/config.php";
 
-// Connect to DB
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["status" => "error", "message" => "Database connection failed"]);
-    exit;
-}
+// Create DB connection
+$conn = getDbConnection();
 
 // Read JSON input
 $data = json_decode(file_get_contents("php://input"), true);
@@ -34,6 +29,7 @@ if ($action === "register") {
     $email = $conn->real_escape_string($data['email']);
     $password = password_hash($data['password'], PASSWORD_BCRYPT); // Secure password hashing
 
+    // Default role = student (could extend to allow librarian/admin later)
     $sql = "INSERT INTO users (name, email, password, role) VALUES ('$name', '$email', '$password', 'student')";
     if ($conn->query($sql)) {
         echo json_encode(["status" => "success", "message" => "User registered successfully"]);
@@ -69,7 +65,7 @@ if ($action === "register") {
                     "id" => $user['id'],
                     "name" => $user['name'],
                     "email" => $user['email'],
-                    "role" => $user['role']
+                    "role" => $user['role'] // <-- This is how we distinguish student/librarian/admin
                 ]
             ]);
         } else {
