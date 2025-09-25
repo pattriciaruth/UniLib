@@ -34,8 +34,9 @@ if ($action === "borrow") {
         exit;
     }
     $book = $check->fetch_assoc();
+
     if ($book['copies'] <= 0) {
-        echo json_encode(["status" => "error", "message" => "No copies available"]);
+        echo json_encode(["status" => "error", "message" => "No copies available. Please reserve the book instead."]);
         exit;
     }
 
@@ -45,6 +46,13 @@ if ($action === "borrow") {
     if ($conn->query($sql)) {
         // Reduce book copies
         $conn->query("UPDATE books SET copies = copies - 1 WHERE id=$book_id");
+
+        // If this user had a reservation for this book → mark as fulfilled
+        $conn->query("UPDATE reservations 
+                      SET status='fulfilled' 
+                      WHERE user_id=$user_id AND book_id=$book_id AND status='active' 
+                      ORDER BY reservation_date ASC LIMIT 1");
+
         echo json_encode(["status" => "success", "message" => "Book borrowed successfully"]);
     } else {
         http_response_code(500);
@@ -79,6 +87,19 @@ if ($action === "borrow") {
     if ($conn->query($sql)) {
         // Increase book copies
         $conn->query("UPDATE books SET copies = copies + 1 WHERE id=$book_id");
+
+        // Check for any active reservation → mark the OLDEST one as fulfilled
+        $reservation = $conn->query("SELECT id FROM reservations 
+                                     WHERE book_id=$book_id AND status='active' 
+                                     ORDER BY reservation_date ASC LIMIT 1");
+
+        if ($reservation->num_rows > 0) {
+            $res = $reservation->fetch_assoc();
+            $res_id = $res['id'];
+
+            $conn->query("UPDATE reservations SET status='fulfilled' WHERE id=$res_id");
+        }
+
         echo json_encode(["status" => "success", "message" => "Book returned successfully"]);
     } else {
         http_response_code(500);
@@ -97,7 +118,7 @@ if ($action === "borrow") {
 
     $loans = [];
     while ($row = $result->fetch_assoc()) {
-        // Check if overdue (due_date < today and not returned)
+        // Mark overdue dynamically
         if ($row['returned'] == 0 && strtotime($row['due_date']) < time()) {
             $row['status'] = 'overdue';
         }
