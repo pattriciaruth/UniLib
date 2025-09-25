@@ -36,12 +36,14 @@ CREATE TABLE loans (
     user_id INT NOT NULL,
     book_id INT NOT NULL,
     loan_date DATE DEFAULT (CURRENT_DATE),
-    due_date DATE,
+    due_date DATE NOT NULL,
     returned BOOLEAN DEFAULT FALSE,
     returned_at DATE NULL,
+    status ENUM('borrowed','returned','overdue') DEFAULT 'borrowed',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 );
+
 
 -- =========================
 -- Reservations Table
