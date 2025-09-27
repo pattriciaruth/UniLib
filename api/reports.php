@@ -5,6 +5,25 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 header("Access-Control-Allow-Headers: Content-Type");
 
+//admin only report check
+$user_id = $_GET['user_id'] ?? null;
+
+if ($user_id) {
+    $check = $conn->query("SELECT role FROM users WHERE id=$user_id LIMIT 1");
+    $role = $check->fetch_assoc()['role'] ?? null;
+
+    if ($role !== 'admin') {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Access denied. Admin only."]);
+        exit;
+    }
+} else {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Missing user_id"]);
+    exit;
+}
+
+
 // Include DB config
 require_once __DIR__ . "/../config/config.php";
 $conn = getDbConnection();
