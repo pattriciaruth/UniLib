@@ -23,6 +23,9 @@ CREATE TABLE books (
     author VARCHAR(150),
     subject VARCHAR(100),
     available BOOLEAN DEFAULT TRUE,
+    isbn VARCHAR(50) UNIQUE,
+    published_year INT,
+    copies INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- =========================
@@ -33,12 +36,14 @@ CREATE TABLE loans (
     user_id INT NOT NULL,
     book_id INT NOT NULL,
     loan_date DATE DEFAULT (CURRENT_DATE),
-    due_date DATE,
+    due_date DATE NOT NULL,
     returned BOOLEAN DEFAULT FALSE,
     returned_at DATE NULL,
+    status ENUM('borrowed','returned','overdue') DEFAULT 'borrowed',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 );
+
 
 -- =========================
 -- Reservations Table
@@ -47,7 +52,7 @@ CREATE TABLE reservations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     book_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reservation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('waiting','notified','fulfilled') DEFAULT 'waiting',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
