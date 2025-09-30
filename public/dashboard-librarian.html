@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Librarian Dashboard · Online Library</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Librarian Dashboard</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="login.html">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Manage Catalogue</h2>
+      <form>
+        <label>Title</label>
+        <input type="text" placeholder="Book title" required>
+
+        <label>Author</label>
+        <input type="text" placeholder="Author name" required>
+
+        <label>ISBN</label>
+        <input type="text" placeholder="978-…" pattern="[0-9\-]{10,17}">
+
+        <label>Status</label>
+        <select>
+          <option>available</option>
+          <option>on_loan</option>
+          <option>reserved</option>
+        </select>
+
+        <button type="submit">Save Book</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Recent Loans</h2>
+      <table>
+        <thead>
+          <tr><th>Student</th><th>Book</th><th>Loaned</th><th>Due</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>A. Lee</td><td>Clean Code</td><td>2025-09-29</td><td>2025-10-12</td></tr>
+          <tr><td>M. Patel</td><td>DDIA</td><td>2025-09-28</td><td>2025-10-11</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Catalogue (sample)</h2>
+      <table>
+        <thead>
+          <tr><th>Title</th><th>Author</th><th>ISBN</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Clean Code</td><td>R. C. Martin</td><td>9780132350884</td><td>available</td></tr>
+          <tr><td>DDIA</td><td>M. Kleppmann</td><td>9781449373320</td><td>on_loan</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
