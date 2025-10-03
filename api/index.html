@@ -1,3 +1,4 @@
+// HTML structure for display
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,11 +13,8 @@
             <h1>UniLib</h1>
             <nav>
                 <a href="#catalogue" id="nav-catalogue">Catalogue</a>
-                
                 <a href="#dashboard" style="display:none;" id="dashboard-link">Dashboard</a>
-                
                 <a href="#login" id="nav-login">Login</a>
-                
                 <button id="logout-btn" style="display:none;">Logout</button>
             </nav>
         </div>
@@ -35,7 +33,6 @@
         <section id="catalogue-section" style="display:none;">
             <h2>Book Catalogue</h2>
             <input type="text" id="search-input" placeholder="Search by Title or Author..." onkeyup="filterBooks()">
-            
             <div id="book-list" class="book-grid">
                 </div>
         </section>
