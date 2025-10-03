@@ -1,0 +1,155 @@
+/* General Reset */
+#css used for basic styling of the application
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f4f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+    overflow: hidden;
+}
+
+/* Header and Navigation */
+header {
+    background: #007bff; /* University Blue */
+    color: #ffffff;
+    padding: 1rem 0;
+    border-bottom: 5px solid #0056b3;
+}
+
+header h1 {
+    float: left;
+    margin-top: 5px;
+}
+
+header nav {
+    float: right;
+    margin-top: 10px;
+}
+
+header nav a, header nav button {
+    color: #ffffff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 14px;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 5px;
+}
+
+header nav a:hover, header nav button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Main Content */
+main {
+    padding: 20px 0;
+    min-height: 70vh;
+}
+
+section {
+    background: #ffffff;
+    padding: 30px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    color: #007bff;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Forms and Inputs */
+#login-form input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button[type="submit"], .book-item button {
+    display: inline-block;
+    background: #28a745; /* Green for actions */
+    color: #ffffff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button[type="submit"]:hover, .book-item button:hover {
+    background: #1e7e34;
+}
+
+/* Catalogue Grid */
+#search-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.book-item {
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.book-item h3 {
+    color: #007bff;
+    margin-bottom: 5px;
+}
+
+/* Dashboard */
+.dashboard-panel {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f7f7f7;
+}
+
+#user-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #e9ecef;
+    border-radius: 4px;
+}
+
+/* Footer */
+footer {
+    background: #333;
+    color: #ffffff;
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: 30px;
+}
