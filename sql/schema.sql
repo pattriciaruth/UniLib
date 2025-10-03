@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS unilib;
-USE unilib;
+-- CREATE DATABASE IF NOT EXISTS unilib;
+-- USE unilib;
 
 -- =========================
 -- Users Table
