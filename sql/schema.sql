@@ -77,7 +77,7 @@ CREATE TABLE fines (
 -- Sample Data
 -- =========================
 
--- Add sample users
+-- sample users
 INSERT INTO users (name, email, password, role) VALUES
 ('Admin User', 'admin@unilib.com', 'adminpass', 'admin'),
 ('Librarian Jane', 'librarian@unilib.com', 'librarianpass', 'librarian'),
