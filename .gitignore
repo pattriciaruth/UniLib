@@ -1,0 +1,27 @@
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+error_log
+php_errors.log
+
+# Sensitive config (DB credentials)
+config/config.php
+
+# Cache / temp files
+*.tmp
+.cache/
+
+# Composer dependencies (if used later)
+vendor/
+
+# Node dependencies (if you add frontend tooling later)
+node_modules/
+
+# Backup files
+*.bak
+*.swp
