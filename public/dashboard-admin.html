@@ -14,42 +14,53 @@
 </head>
 <body>
   <header>
-    <h1>Admin Dashboard</h1>
+    <h1>⚙️ Admin Dashboard</h1>
     <nav>
       <a href="index.html">Home</a>
-      <a href="login.html">Logout</a>
+      <button onclick="logout()">Logout</button>
     </nav>
   </header>
 
   <main>
-    <section class="kpis">
-      <div class="kpi"><h3>Active users</h3><div class="value">312</div></div>
-      <div class="kpi"><h3>Loans this month</h3><div class="value">1,028</div></div>
-      <div class="kpi"><h3>Overdue rate</h3><div class="value">5.2%</div></div>
+    <!-- Welcome -->
+    <section>
+      <h2 id="welcomeMessage"></h2>
     </section>
 
+    <!-- Usage Report -->
     <section class="card">
-      <h2>Usage Summary</h2>
-      <table>
-        <thead>
-          <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Most borrowed</td><td>Clean Code</td><td>Software Eng</td></tr>
-          <tr><td>Peak day</td><td>Wednesday</td><td>12:00–14:00</td></tr>
-          <tr><td>Overdue items</td><td>7</td><td>Reminder emails sent</td></tr>
-        </tbody>
-      </table>
+      <h2>📊 Library Usage</h2>
+      <button onclick="getUsageReport()">View Report</button>
+      <div id="usageReport"></div>
     </section>
 
+    <!-- Overdue Loans -->
     <section class="card">
-      <h2>Vendors / Tools (for your RFP notes)</h2>
-      <ul>
-        <li>GitHub – version control</li>
-        <li>Netlify/Vercel – static hosting (frontend)</li>
-        <li>Bootstrap/Tailwind (optional) – CSS framework (you’re using custom CSS now)</li>
-      </ul>
+      <h2>⏰ Overdue Loans</h2>
+      <button onclick="getOverdue()">View Overdue</button>
+      <div id="overdueList"></div>
+    </section>
+
+    <!-- Popular Books -->
+    <section class="card">
+      <h2>⭐ Popular Books</h2>
+      <button onclick="getPopular()">View Top Books</button>
+      <div id="popularBooks"></div>
+    </section>
+
+    <!-- User Activity -->
+    <section class="card">
+      <h2>👤 User Activity</h2>
+      <input type="number" id="targetUserId" placeholder="Enter User ID">
+      <button onclick="getUserActivity()">Check Activity</button>
+      <div id="userActivity"></div>
     </section>
   </main>
+
+  <footer>
+    <p>&copy; 2025 UniLib</p>
+  </footer>
+
+  <script src="admin.js"></script>
 </body>
 </html>
