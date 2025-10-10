@@ -1,3 +1,0 @@
-git rm --cached .DS_Store
-git commit -m "Remove .DS_Store and update .gitignore"
-git push

@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header><h1>Register</h1></header>
+  <header><h1>Create an Account</h1></header>
   <main class="card">
     <form>
       <label>Name</label>
@@ -21,8 +21,16 @@
         <option>Librarian</option>
         <option>Admin</option>
       </select>
-      <button type="submit">Register</button>
+      <button onclick="registerUser()">Register</button>
+      <p id="registerMessage"></p>
+      <p>Already have an account? <a href="login.html">Login here</a></p>
     </form>
   </main>
+  
+  <footer>
+    <p>&copy; 2025 UniLib</p>
+  </footer>
+
+  <script src="auth.js"></script>
 </body>
 </html>
