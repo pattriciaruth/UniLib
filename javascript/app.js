@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost/unilib/api";
+const API_BASE = window.location.origin + "/api";
 
 // Helper: show JSON result
 function showResult(id, data) {

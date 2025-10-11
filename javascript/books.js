@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost/unilib/api";
+const API_BASE = window.location.origin + "/api";
+
 
 // Load all books on page load
 window.onload = () => {
