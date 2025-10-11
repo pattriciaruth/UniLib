@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost/unilib/api";
+const API_BASE = window.location.origin + "/api";
+
 const user = JSON.parse(localStorage.getItem("user"));
 
 // Redirect if not logged in or wrong role
