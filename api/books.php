@@ -24,37 +24,23 @@ switch ($action) {
     // 📚 LIST ALL BOOKS
     // ===============================
     case 'list':
-        $result = $conn->query("SELECT * FROM books ORDER BY created_at DESC");
-        $books = $result->fetch_all(MYSQLI_ASSOC);
-
-        echo json_encode([
-            "status" => "success",
-            "books" => $books
-        ]);
-        break;
+    $result = $conn->query("SELECT * FROM books");
+    $books = $result->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(["status" => "success", "books" => $books]);
+    break;
 
     // ===============================
     // 🔍 SEARCH BOOKS (by title, author, or subject)
     // ===============================
     case 'search':
-        $query = $_GET['q'] ?? '';
-        $like = "%" . $query . "%";
-
-        $stmt = $conn->prepare("
-            SELECT * FROM books 
-            WHERE title LIKE ? OR author LIKE ? OR subject LIKE ?
-            ORDER BY created_at DESC
-        ");
-        $stmt->bind_param("sss", $like, $like, $like);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $books = $result->fetch_all(MYSQLI_ASSOC);
-
-        echo json_encode([
-            "status" => "success",
-            "books" => $books
-        ]);
-        break;
+    $query = "%" . ($data['query'] ?? $_GET['query'] ?? '') . "%";
+    $stmt = $conn->prepare("SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?");
+    $stmt->bind_param("sss", $query, $query, $query);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $books = $result->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(["status" => "success", "books" => $books]);
+    break;
 
     // ===============================
     // ➕ ADD A NEW BOOK
