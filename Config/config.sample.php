@@ -9,10 +9,10 @@ define('DB_NAME', getenv('DB_NAME'));
 function getDbConnection() {
     $conn = mysqli_init();
 
-    // Explicitly tell mysqli to require SSL
-    mysqli_options($conn, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-    mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
+    // ✅ Enable SSL (PlanetScale requires TLS)
+    mysqli_ssl_set($conn, NULL, NULL, "/etc/ssl/certs/ca-certificates.crt", NULL, NULL);
 
+    // ✅ Explicitly require SSL
     if (!mysqli_real_connect(
         $conn,
         DB_HOST,
@@ -21,18 +21,17 @@ function getDbConnection() {
         DB_NAME,
         3306,
         NULL,
-        MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT // ✅ Key change for Render+PlanetScale
+        MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT
     )) {
-        http_response_code(500);
-        echo json_encode([
+        die(json_encode([
             "status" => "error",
-            "message" => "Database connection failed: " . mysqli_connect_error()
-        ]);
-        exit;
+            "message" => "Connection failed: " . mysqli_connect_error()
+        ]));
     }
 
     $conn->set_charset("utf8mb4");
     return $conn;
 }
+
 ?>
 
