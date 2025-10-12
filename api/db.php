@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Include config (case-sensitive on Render)
-require_once __DIR__ . "/../Config/config.php";
+require_once __DIR__ . "/../config/config.php";
 
 try {
     // Try connecting to database

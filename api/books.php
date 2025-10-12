@@ -6,7 +6,7 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
 // Include DB config (case-sensitive path for Render)
-require_once __DIR__ . "/../Config/config.php";
+require_once __DIR__ . "/../config/config.php";
 $conn = getDbConnection();
 
 // Handle CORS preflight requests
