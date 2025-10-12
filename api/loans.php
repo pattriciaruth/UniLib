@@ -25,7 +25,7 @@ switch ($action) {
     // 📚 BORROW A BOOK
     // ===============================
     case "borrow":
-        if (!isset($data['user_id'], $data['book_id'], $data['due_date'])) {
+        if (!isset($data['user_id'], $data['book_id'])) {
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => "Missing required fields"]);
             exit;
@@ -33,7 +33,9 @@ switch ($action) {
 
         $user_id = intval($data['user_id']);
         $book_id = intval($data['book_id']);
-        $due_date = $conn->real_escape_string($data['due_date']);
+        $due_date = isset($data['due_date'])
+            ? $conn->real_escape_string($data['due_date'])
+            : date("Y-m-d", strtotime("+14 days"));
 
         // Check if book exists and available
         $stmt = $conn->prepare("SELECT copies FROM books WHERE id=?");
@@ -57,8 +59,8 @@ switch ($action) {
         $stmt->bind_param("iis", $user_id, $book_id, $due_date);
 
         if ($stmt->execute()) {
-            // Update copies count
-            $conn->query("UPDATE books SET copies = copies - 1 WHERE id=$book_id");
+            // Safely reduce available copies
+            $conn->query("UPDATE books SET copies = GREATEST(copies - 1, 0) WHERE id=$book_id");
 
             // Mark any active reservation as fulfilled
             $conn->query("UPDATE reservations 
@@ -66,7 +68,10 @@ switch ($action) {
                           WHERE user_id=$user_id AND book_id=$book_id AND status='active' 
                           ORDER BY reservation_date ASC LIMIT 1");
 
-            echo json_encode(["status" => "success", "message" => "Book borrowed successfully"]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Book borrowed successfully! Due on $due_date"
+            ]);
         } else {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Error borrowing book: " . $conn->error]);
@@ -102,6 +107,7 @@ switch ($action) {
         $update->bind_param("i", $loan_id);
 
         if ($update->execute()) {
+            // Increase copies again
             $conn->query("UPDATE books SET copies = copies + 1 WHERE id=$book_id");
 
             // Fulfill next reservation if exists
@@ -151,6 +157,42 @@ switch ($action) {
         }
 
         echo json_encode(["status" => "success", "loans" => $loans]);
+        break;
+
+    // ===============================
+    // 🆕 STUDENT SELF RETURN OPTION
+    // ===============================
+    case "student_return":
+        if (!isset($data['user_id'], $data['book_id'])) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Missing user_id or book_id"]);
+            exit;
+        }
+
+        $user_id = intval($data['user_id']);
+        $book_id = intval($data['book_id']);
+
+        $loan = $conn->prepare("SELECT id FROM loans WHERE user_id=? AND book_id=? AND returned=FALSE LIMIT 1");
+        $loan->bind_param("ii", $user_id, $book_id);
+        $loan->execute();
+        $result = $loan->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(["status" => "error", "message" => "No active loan found for this book"]);
+            exit;
+        }
+
+        $loan_id = $result->fetch_assoc()['id'];
+        $update = $conn->prepare("UPDATE loans SET returned=TRUE, returned_at=CURDATE(), status='returned' WHERE id=?");
+        $update->bind_param("i", $loan_id);
+
+        if ($update->execute()) {
+            $conn->query("UPDATE books SET copies = copies + 1 WHERE id=$book_id");
+            echo json_encode(["status" => "success", "message" => "Book returned successfully by student"]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error returning book: " . $conn->error]);
+        }
         break;
 
     // ===============================
