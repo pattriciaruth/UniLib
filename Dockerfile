@@ -15,7 +15,7 @@ COPY api/ /var/www/html/api/
 COPY Config/ /var/www/html/Config/
 
 # Copy sample config as actual config
-COPY Config/config.sample.php /var/www/html/config/config.php
+COPY Config/config.sample.php /var/www/html/Config/config.php
 
 # Set working directory
 WORKDIR /var/www/html
