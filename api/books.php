@@ -24,7 +24,7 @@ switch ($action) {
     // 📚 LIST ALL BOOKS
     // ===============================
     case 'list':
-    $result = $conn->query("SELECT * FROM books");
+    $result = $conn->query("SELECT * FROM books ORDER BY created_at DESC");
     $books = $result->fetch_all(MYSQLI_ASSOC);
     echo json_encode(["status" => "success", "books" => $books]);
     break;

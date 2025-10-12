@@ -24,7 +24,7 @@ function logout() {
 async function addBook() {
   const title = document.getElementById("bookTitle").value.trim();
   const author = document.getElementById("bookAuthor").value.trim();
-  const subject = document.getElementById("bookSubject").value.trim();
+  const subject = document.getElementById("bookSubject")?.value.trim() || "";
   const isbn = document.getElementById("bookIsbn").value.trim();
   const published_year = document.getElementById("bookYear").value.trim();
   const copies = document.getElementById("bookCopies").value.trim() || 1;
@@ -40,26 +40,32 @@ async function addBook() {
     body: JSON.stringify({ title, author, subject, isbn, published_year, copies })
   });
   const data = await res.json();
-  alert(data.message);
+  alert(data.message || "Done");
   listBooks();
 }
 
 async function listBooks() {
   const res = await fetch(`${API_BASE}/books.php?action=list`);
   const data = await res.json();
-  renderTable("booksList", data.books || [], [
+  // Expect { status: "success", books: [...] }
+  const rows = data.books || data.data || [];
+  renderTable("booksList", rows, [
     "id", "title", "author", "subject", "isbn", "copies", "created_at"
   ]);
 }
 
 // ==================== USERS ====================
 async function listUsers() {
+  const box = document.getElementById("usersList");
+  box.innerHTML = "Loading...";
   try {
     const res = await fetch(`${API_BASE}/users.php?action=list`);
     const data = await res.json();
-    renderTable("usersList", data.users || [], ["id", "name", "email", "role"]);
+    // Expect { status: "success", users: [...] }
+    const rows = data.users || [];
+    renderTable("usersList", rows, ["id", "name", "email", "role"]);
   } catch (err) {
-    document.getElementById("usersList").innerHTML = `<p>Error: ${err.message}</p>`;
+    box.innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }
 
@@ -86,7 +92,7 @@ async function borrowBook() {
     })
   });
   const data = await res.json();
-  alert(data.message);
+  alert(data.message || "Done");
   listLoans();
 }
 
@@ -103,14 +109,16 @@ async function returnBook() {
     body: JSON.stringify({ loan_id })
   });
   const data = await res.json();
-  alert(data.message);
+  alert(data.message || "Done");
   listLoans();
 }
 
 async function listLoans() {
   const res = await fetch(`${API_BASE}/loans.php?action=list`);
   const data = await res.json();
-  renderTable("loansList", data.loans || [], [
+  // Expect { status: "success", loans: [...] }
+  const rows = data.loans || [];
+  renderTable("loansList", rows, [
     "id", "user_id", "book_id", "loan_date", "due_date", "returned", "status"
   ]);
 }
@@ -148,4 +156,3 @@ function renderTable(containerId, items, fields) {
 
   container.appendChild(table);
 }
-
