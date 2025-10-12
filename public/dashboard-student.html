@@ -20,6 +20,25 @@
       <h2 id="welcomeMessage"></h2>
     </section>
 
+
+    <!-- Browse and Borrow Books -->
+<section class="card">
+  <h2>Browse Books</h2>
+  <form id="searchForm" onsubmit="event.preventDefault(); searchBooks();">
+    <input type="text" id="searchQuery" placeholder="Search by title, author, or subject">
+    <button type="submit">Search</button>
+    <button type="button" onclick="listAllBooks()">Show All</button>
+  </form>
+  <div id="booksList"></div>
+</section>
+
+<!-- Available Books -->
+<section class="card">
+  <h2>Available Books</h2>
+  <button onclick="loadBooks()">Refresh List</button>
+  <div id="booksList"></div>
+</section>
+
     <!-- My Loans -->
     <section class="card">
       <h2>My Loans</h2>

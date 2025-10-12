@@ -29,7 +29,7 @@ nav a:hover {
   background: #fff;
   padding: 1.5rem;
   margin: 1rem auto;
-  max-width: 600px;
+  max-width: 1000px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
@@ -66,4 +66,51 @@ th, td {
 }
 th {
   background: #f1f5f9;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+  font-size: 0.95rem;
+}
+
+.report-table th, .report-table td {
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.report-table th {
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
+/* Color-coded rows for loan history */
+.report-table tr.returned td {
+  background-color: #d1f5d3;
+}
+
+.report-table tr.overdue td {
+  background-color: #f8d7da;
+}
+
+.report-table tr.borrowed td {
+  background-color: #dce9ff;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+
+.report-table th, .report-table td {
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.report-table th {
+  background: #f7f7f7;
 }

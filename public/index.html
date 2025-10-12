@@ -5,17 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📚 UniLib Online Library System</title>
 
-  <!-- Correct CSS path for Hostinger -->
   <link rel="stylesheet" href="css/styles.css">
-
-  <!-- Optional JS (if you want interactivity later) -->
   <script defer src="javascript/books.js"></script>
 </head>
 <body>
   <header>
     <h1>📚 UniLib Library System</h1>
     <nav>
-      <!-- Links now correctly point to other pages in the same directory -->
       <a href="index.html">Home</a>
       <a href="login.html">Login</a>
       <a href="register.html">Register</a>
@@ -26,9 +22,15 @@
     <section class="card">
       <h2>Search Books</h2>
       <form id="searchForm">
-        <input type="search" placeholder="Search by Title, Author, or ISBN" required>
+        <input type="search" id="searchInput" placeholder="Search by Title, Author, or ISBN">
         <button type="submit">Search</button>
+        <button type="button" id="showAll">Show All</button>
       </form>
+    </section>
+
+    <section class="card">
+      <h2>Available Books</h2>
+      <div id="booksList"><p>Loading books...</p></div>
     </section>
   </main>
 

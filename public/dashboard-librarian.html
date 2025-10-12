@@ -21,17 +21,19 @@
     </section>
 
     <!-- Book Management -->
-    <section class="card">
-      <h2>Manage Books</h2>
-      <input type="text" id="bookTitle" placeholder="Title">
-      <input type="text" id="bookAuthor" placeholder="Author">
-      <input type="text" id="bookIsbn" placeholder="ISBN">
-      <input type="number" id="bookYear" placeholder="Year">
-      <input type="number" id="bookCopies" placeholder="Copies">
-      <button onclick="addBook()">Add Book</button>
-      <button onclick="listBooks()">Refresh Books</button>
-      <div id="booksList"></div>
-    </section>
+<section class="card">
+  <h2>📚 Manage Books</h2>
+  <input type="text" id="bookTitle" placeholder="Title">
+  <input type="text" id="bookAuthor" placeholder="Author">
+  <input type="text" id="bookSubject" placeholder="Subject">
+  <input type="text" id="bookIsbn" placeholder="ISBN">
+  <input type="number" id="bookYear" placeholder="Year">
+  <input type="number" id="bookCopies" placeholder="Copies">
+  <button onclick="addBook()">Add Book</button>
+  <button onclick="listBooks()">Refresh Books</button>
+  <div id="booksList"></div>
+</section>
+
 
     <!-- Loan Management -->
     <section class="card">
@@ -44,6 +46,14 @@
       <button onclick="listLoans()">Refresh Loans</button>
       <div id="loansList"></div>
     </section>
+
+    <!-- User Management -->
+<section class="card">
+  <h2>👥 Users List</h2>
+  <button onclick="listUsers()">Show Users</button>
+  <div id="usersList"></div>
+</section>
+
   </main>
 
   <footer>

@@ -1,23 +1,27 @@
 # Use PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Enable mysqli
-RUN docker-php-ext-install mysqli
+# Enable mysqli and SSL support
+RUN apt-get update && apt-get install -y libssl-dev \
+    && docker-php-ext-install mysqli \
+    && docker-php-ext-enable mysqli
 
-# Copy all files from your project
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Copy project files
 COPY public/ /var/www/html/
 COPY api/ /var/www/html/api/
 COPY Config/ /var/www/html/Config/
 
-# Optional: Enable mod_rewrite (for clean URLs)
-RUN a2enmod rewrite
+# Copy sample config as actual config
+COPY Config/config.sample.php /var/www/html/Config/config.php
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Expose port 80
+# Expose HTTP port
 EXPOSE 80
 
 # Start Apache
 CMD ["apache2-foreground"]
-
