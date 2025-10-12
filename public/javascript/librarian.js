@@ -24,108 +24,95 @@ function logout() {
 async function addBook() {
   const title = document.getElementById("bookTitle").value.trim();
   const author = document.getElementById("bookAuthor").value.trim();
+  const subject = document.getElementById("bookSubject").value.trim();
   const isbn = document.getElementById("bookIsbn").value.trim();
   const published_year = document.getElementById("bookYear").value.trim();
-  const copies = parseInt(document.getElementById("bookCopies").value) || 1;
+  const copies = document.getElementById("bookCopies").value.trim() || 1;
 
-  if (!title || !author || !isbn) {
-    alert("Please fill in Title, Author, and ISBN.");
+  if (!title) {
+    alert("Book title is required!");
     return;
   }
 
-  try {
-    const res = await fetch(`${API_BASE}/books.php?action=add`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, author, isbn, published_year, copies }),
-    });
-
-    const data = await res.json();
-    alert(data.message || "Book added successfully.");
-    listBooks();
-  } catch (err) {
-    alert("Error adding book: " + err.message);
-  }
+  const res = await fetch(`${API_BASE}/books.php?action=add`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, author, subject, isbn, published_year, copies })
+  });
+  const data = await res.json();
+  alert(data.message);
+  listBooks();
 }
 
 async function listBooks() {
+  const res = await fetch(`${API_BASE}/books.php?action=list`);
+  const data = await res.json();
+  renderTable("booksList", data.books || [], [
+    "id", "title", "author", "subject", "isbn", "copies", "created_at"
+  ]);
+}
+
+// ==================== USERS ====================
+async function listUsers() {
   try {
-    const res = await fetch(`${API_BASE}/books.php?action=list`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(`${API_BASE}/users.php?action=list`);
     const data = await res.json();
-    renderTable("booksList", data.data || [], ["id", "title", "author", "isbn", "copies"]);
+    renderTable("usersList", data.users || [], ["id", "name", "email", "role"]);
   } catch (err) {
-    document.getElementById("booksList").innerHTML = `<p>Error: ${err.message}</p>`;
+    document.getElementById("usersList").innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }
 
 // ==================== LOANS ====================
 async function borrowBook() {
-  const user_id = document.getElementById("loanUserId").value;
-  const book_id = document.getElementById("loanBookId").value;
-
-  // default due date = 14 days later
-  const due_date = new Date();
-  due_date.setDate(due_date.getDate() + 14);
-  const formattedDueDate = due_date.toISOString().split("T")[0];
+  const user_id = document.getElementById("loanUserId").value.trim();
+  const book_id = document.getElementById("loanBookId").value.trim();
 
   if (!user_id || !book_id) {
-    alert("Please provide both User ID and Book ID.");
+    alert("Enter User ID and Book ID");
     return;
   }
 
-  try {
-    const res = await fetch(`${API_BASE}/loans.php?action=borrow`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id, book_id, due_date: formattedDueDate }),
-    });
-    const data = await res.json();
-    alert(data.message || "Book borrowed successfully.");
-    listLoans();
-  } catch (err) {
-    alert("Error borrowing book: " + err.message);
-  }
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 14);
+
+  const res = await fetch(`${API_BASE}/loans.php?action=borrow`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id,
+      book_id,
+      due_date: dueDate.toISOString().split("T")[0]
+    })
+  });
+  const data = await res.json();
+  alert(data.message);
+  listLoans();
 }
 
 async function returnBook() {
-  const loan_id = document.getElementById("returnLoanId").value;
-
+  const loan_id = document.getElementById("returnLoanId").value.trim();
   if (!loan_id) {
-    alert("Please enter the Loan ID to return.");
+    alert("Enter Loan ID to return.");
     return;
   }
 
-  try {
-    const res = await fetch(`${API_BASE}/loans.php?action=return`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loan_id }),
-    });
-    const data = await res.json();
-    alert(data.message || "Book returned successfully.");
-    listLoans();
-  } catch (err) {
-    alert("Error returning book: " + err.message);
-  }
+  const res = await fetch(`${API_BASE}/loans.php?action=return`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loan_id })
+  });
+  const data = await res.json();
+  alert(data.message);
+  listLoans();
 }
 
 async function listLoans() {
-  try {
-    const res = await fetch(`${API_BASE}/loans.php?action=list`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    renderTable("loansList", data.data || [], [
-      "id",
-      "user_id",
-      "book_id",
-      "loan_date",
-      "due_date",
-      "returned",
-    ]);
-  } catch (err) {
-    document.getElementById("loansList").innerHTML = `<p>Error: ${err.message}</p>`;
-  }
+  const res = await fetch(`${API_BASE}/loans.php?action=list`);
+  const data = await res.json();
+  renderTable("loansList", data.loans || [], [
+    "id", "user_id", "book_id", "loan_date", "due_date", "returned", "status"
+  ]);
 }
 
 // ==================== HELPER: TABLE RENDER ====================
@@ -142,16 +129,16 @@ function renderTable(containerId, items, fields) {
   table.border = "1";
   const header = document.createElement("tr");
 
-  fields.forEach((field) => {
+  fields.forEach(field => {
     const th = document.createElement("th");
     th.innerText = field.toUpperCase();
     header.appendChild(th);
   });
   table.appendChild(header);
 
-  items.forEach((item) => {
+  items.forEach(item => {
     const row = document.createElement("tr");
-    fields.forEach((field) => {
+    fields.forEach(field => {
       const td = document.createElement("td");
       td.innerText = item[field] ?? "-";
       row.appendChild(td);
@@ -161,3 +148,4 @@ function renderTable(containerId, items, fields) {
 
   container.appendChild(table);
 }
+

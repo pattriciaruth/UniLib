@@ -102,6 +102,19 @@ switch ($action) {
         ]);
         break;
 
+// ===============================
+// 📋 LIST ALL USERS
+// ===============================
+case 'list':
+    $result = $conn->query("SELECT id, name, email, role FROM users ORDER BY id ASC");
+    $users = [];
+    while ($row = $result->fetch_assoc()) {
+        $users[] = $row;
+    }
+    echo json_encode(["status" => "success", "users" => $users]);
+    break;
+
+
     // ===============================
     // 🚫 INVALID ACTION
     // ===============================
