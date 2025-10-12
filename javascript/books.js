@@ -11,8 +11,8 @@ async function listBooks() {
   const data = await res.json();
 
   if (data.status === "success") {
-    renderBooks(data.books);
-  } else {
+  renderBooks(data.books || data.data);
+} else {
     document.getElementById("booksList").innerText = data.message;
   }
 }
@@ -23,8 +23,8 @@ async function searchBooks() {
   const data = await res.json();
 
   if (data.status === "success") {
-    renderBooks(data.books);
-  } else {
+  renderBooks(data.books || data.data);
+} else {
     document.getElementById("booksList").innerText = data.message;
   }
 }

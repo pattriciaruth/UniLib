@@ -2,126 +2,135 @@
 // api/reports.php
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-//admin only report check
-$user_id = $_GET['user_id'] ?? null;
+// Handle CORS preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
-if ($user_id) {
-    $check = $conn->query("SELECT role FROM users WHERE id=$user_id LIMIT 1");
-    $role = $check->fetch_assoc()['role'] ?? null;
+// Include DB config
+require_once __DIR__ . "/../Config/config.php";
+$conn = getDbConnection();
 
-    if ($role !== 'admin') {
-        http_response_code(403);
-        echo json_encode(["status" => "error", "message" => "Access denied. Admin only."]);
-        exit;
-    }
-} else {
+$action = $_GET['action'] ?? '';
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+
+// ===============================
+// 🔒 ADMIN-ONLY ACCESS CHECK
+// ===============================
+if (!$user_id) {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "Missing user_id"]);
     exit;
 }
 
+$check = $conn->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
+$check->bind_param("i", $user_id);
+$check->execute();
+$result = $check->get_result();
 
-// Include DB config
-require_once __DIR__ . "/../config/config.php";
-$conn = getDbConnection();
+if ($result->num_rows === 0) {
+    http_response_code(404);
+    echo json_encode(["status" => "error", "message" => "User not found"]);
+    exit;
+}
 
-$action = $_GET['action'] ?? null;
+$role = $result->fetch_assoc()['role'];
+if ($role !== 'admin') {
+    http_response_code(403);
+    echo json_encode(["status" => "error", "message" => "Access denied. Admins only."]);
+    exit;
+}
 
-if ($action === "usage") {
-    // ===============================
-    // REPORT 1: LIBRARY USAGE
-    // ===============================
-    $sql = [
-        "total_users" => "SELECT COUNT(*) AS count FROM users",
-        "total_books" => "SELECT COUNT(*) AS count FROM books",
-        "active_loans" => "SELECT COUNT(*) AS count FROM loans WHERE returned=0",
-        "reservations" => "SELECT COUNT(*) AS count FROM reservations",
-        "fines_unpaid" => "SELECT COUNT(*) AS count FROM fines WHERE paid=0"
-    ];
+// ===============================
+// 📊 HANDLE REPORT ACTIONS
+// ===============================
+switch ($action) {
 
-    $report = [];
-    foreach ($sql as $key => $query) {
-        $res = $conn->query($query);
-        $row = $res->fetch_assoc();
-        $report[$key] = $row['count'];
-    }
+    // 📈 REPORT 1: LIBRARY USAGE SUMMARY
+    case 'usage':
+        $queries = [
+            "total_users" => "SELECT COUNT(*) AS count FROM users",
+            "total_books" => "SELECT COUNT(*) AS count FROM books",
+            "active_loans" => "SELECT COUNT(*) AS count FROM loans WHERE returned=0",
+            "reservations" => "SELECT COUNT(*) AS count FROM reservations",
+            "unpaid_fines" => "SELECT COUNT(*) AS count FROM fines WHERE paid=0"
+        ];
 
-    echo json_encode(["status" => "success", "usage_report" => $report]);
+        $report = [];
+        foreach ($queries as $key => $sql) {
+            $res = $conn->query($sql);
+            $report[$key] = $res ? $res->fetch_assoc()['count'] : 0;
+        }
 
-} elseif ($action === "overdue") {
-    // ===============================
-    // REPORT 2: OVERDUE LOANS
-    // ===============================
-    $today = date("Y-m-d");
-    $sql = "SELECT l.id AS loan_id, u.name AS user_name, u.email, b.title AS book_title, 
+        echo json_encode(["status" => "success", "report" => $report]);
+        break;
+
+    // 📅 REPORT 2: OVERDUE LOANS
+    case 'overdue':
+        $today = date("Y-m-d");
+
+        $stmt = $conn->prepare("
+            SELECT l.id AS loan_id, u.name AS user_name, u.email, b.title AS book_title, 
                    l.due_date, l.returned
             FROM loans l
             JOIN users u ON l.user_id = u.id
             JOIN books b ON l.book_id = b.id
-            WHERE l.returned = 0 AND l.due_date < '$today'";
+            WHERE l.returned = 0 AND l.due_date < ?
+            ORDER BY l.due_date ASC
+        ");
+        $stmt->bind_param("s", $today);
+        $stmt->execute();
+        $overdue = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    $result = $conn->query($sql);
-    $overdue = [];
-    while ($row = $result->fetch_assoc()) {
-        $overdue[] = $row;
-    }
+        echo json_encode(["status" => "success", "overdue" => $overdue]);
+        break;
 
-    echo json_encode(["status" => "success", "overdue_loans" => $overdue]);
-
-} elseif ($action === "popular_books") {
-    // ===============================
-    // REPORT 3: MOST BORROWED BOOKS
-    // ===============================
-    $sql = "SELECT b.title, COUNT(l.id) AS borrow_count
+    // 📚 REPORT 3: MOST POPULAR BOOKS
+    case 'popular_books':
+        $sql = "
+            SELECT b.title, COUNT(l.id) AS borrow_count
             FROM loans l
             JOIN books b ON l.book_id = b.id
             GROUP BY b.id
             ORDER BY borrow_count DESC
-            LIMIT 5";
+            LIMIT 5
+        ";
+        $result = $conn->query($sql);
+        $popular = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-    $result = $conn->query($sql);
-    $popular = [];
-    while ($row = $result->fetch_assoc()) {
-        $popular[] = $row;
-    }
+        echo json_encode(["status" => "success", "popular_books" => $popular]);
+        break;
 
-    echo json_encode(["status" => "success", "popular_books" => $popular]);
+    // 👤 REPORT 4: USER ACTIVITY (Loans + Fines)
+    case 'user_activity':
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total_loans FROM loans WHERE user_id = ?");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $loan_count = $stmt->get_result()->fetch_assoc()['total_loans'];
 
-} elseif ($action === "user_activity") {
-    // ===============================
-    // REPORT 4: USER ACTIVITY (loans + fines)
-    // ===============================
-    if (!isset($_GET['user_id'])) {
+        $stmt = $conn->prepare("SELECT COALESCE(SUM(amount), 0) AS total_fines FROM fines WHERE user_id = ? AND paid = 0");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $fine_total = $stmt->get_result()->fetch_assoc()['total_fines'];
+
+        echo json_encode([
+            "status" => "success",
+            "user_activity" => [
+                "user_id" => $user_id,
+                "total_loans" => $loan_count,
+                "unpaid_fines" => $fine_total
+            ]
+        ]);
+        break;
+
+    // 🚫 INVALID ACTION
+    default:
         http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "Missing user_id"]);
-        exit;
-    }
-
-    $user_id = intval($_GET['user_id']);
-
-    // Count loans
-    $loan_sql = "SELECT COUNT(*) AS loan_count FROM loans WHERE user_id=$user_id";
-    $loan_count = $conn->query($loan_sql)->fetch_assoc()['loan_count'];
-
-    // Count unpaid fines
-    $fine_sql = "SELECT SUM(amount) AS total_fines FROM fines WHERE user_id=$user_id AND paid=0";
-    $fine_total = $conn->query($fine_sql)->fetch_assoc()['total_fines'] ?? 0;
-
-    echo json_encode([
-        "status" => "success",
-        "user_activity" => [
-            "user_id" => $user_id,
-            "total_loans" => $loan_count,
-            "unpaid_fines" => $fine_total
-        ]
-    ]);
-
-} else {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Invalid action"]);
+        echo json_encode(["status" => "error", "message" => "Invalid action"]);
 }
 
 $conn->close();

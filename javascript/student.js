@@ -25,21 +25,21 @@ function logout() {
 async function getLoans() {
   const res = await fetch(`${API_BASE}/loans.php?action=list&user_id=${user.id}`);
   const data = await res.json();
-  renderList("loansList", data.loans || [], ["book_title", "loan_date", "due_date", "returned"]);
+  renderList("loansList", data.data || [], ["book_title", "loan_date", "due_date", "returned"]);
 }
 
 // ==================== RESERVATIONS ====================
 async function getReservations() {
   const res = await fetch(`${API_BASE}/reservations.php?action=list&user_id=${user.id}`);
   const data = await res.json();
-  renderList("reservationsList", data.reservations || [], ["book_title", "reserved_at", "fulfilled"]);
+  renderList("reservationsList", data.data || [], ["book_title", "reserved_at", "fulfilled"]);
 }
 
 // ==================== FINES ====================
 async function getFines() {
   const res = await fetch(`${API_BASE}/fines.php?action=list&user_id=${user.id}`);
   const data = await res.json();
-  renderList("finesList", data.fines || [], ["loan_id", "amount", "paid"]);
+  renderList("finesList", data.data || [], ["loan_id", "amount", "paid"]);
 }
 
 // ==================== HELPER: RENDER LIST ====================
