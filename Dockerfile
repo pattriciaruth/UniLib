@@ -1,23 +1,31 @@
-# Use PHP 8.2 with Apache
+# ==============================
+# UniLib Deployment Dockerfile
+# ==============================
+
+# 1️⃣ Use PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Enable mysqli
+# 2️⃣ Enable mysqli extension (for MySQL / PlanetScale)
 RUN docker-php-ext-install mysqli
 
-# Copy all files from your project
+# 3️⃣ Copy your project files
 COPY public/ /var/www/html/
 COPY api/ /var/www/html/api/
 COPY Config/ /var/www/html/Config/
 
-# Optional: Enable mod_rewrite (for clean URLs)
+# 4️⃣ Copy sample config as main config (important fix)
+COPY Config/config.sample.php /var/www/html/config/config.php
+
+# 5️⃣ Enable Apache mod_rewrite (optional but useful for clean URLs)
 RUN a2enmod rewrite
 
-# Set working directory
+# 6️⃣ Set working directory
 WORKDIR /var/www/html
 
-# Expose port 80
+# 7️⃣ Expose default HTTP port
 EXPOSE 80
 
-# Start Apache
+# 8️⃣ Start Apache server
 CMD ["apache2-foreground"]
+
 
