@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Include database config
-require_once __DIR__ . "/../config/config.php";
+require_once __DIR__ . "/../Config/config.php";  // capital C!
+
 $conn = getDbConnection();
 
 $action = $_GET['action'] ?? '';
