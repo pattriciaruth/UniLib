@@ -1,24 +1,14 @@
--- Create database
--- CREATE DATABASE IF NOT EXISTS unilib;
--- USE unilib;
-
--- =========================
--- Users Table
--- =========================
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'librarian', 'admin') DEFAULT 'student',
+    role VARCHAR(20) DEFAULT 'student',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =========================
--- Books Table
--- =========================
 CREATE TABLE books (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     author VARCHAR(150),
     subject VARCHAR(100),
@@ -28,62 +18,40 @@ CREATE TABLE books (
     copies INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- =========================
--- Loans Table (Borrowing & Returns)
--- =========================
+
 CREATE TABLE loans (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    book_id INT NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    book_id BIGINT NOT NULL,
     loan_date DATE DEFAULT (CURRENT_DATE),
     due_date DATE NOT NULL,
     returned BOOLEAN DEFAULT FALSE,
     returned_at DATE NULL,
-    status ENUM('borrowed','returned','overdue') DEFAULT 'borrowed',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    status VARCHAR(20) DEFAULT 'borrowed'
 );
 
-
--- =========================
--- Reservations Table
--- =========================
 CREATE TABLE reservations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    book_id INT NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    book_id BIGINT NOT NULL,
     reservation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('active','fulfilled','cancelled') DEFAULT 'active',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    status VARCHAR(20) DEFAULT 'active'
 );
 
--- =========================
--- Fines Table
--- =========================
 CREATE TABLE fines (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    loan_id INT NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    loan_id BIGINT NOT NULL,
     amount DECIMAL(6,2) NOT NULL,
     paid BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- =========================
 
--- =========================
--- Sample Data
--- =========================
-
--- sample users
 INSERT INTO users (name, email, password, role) VALUES
-('Admin User', 'admin@unilib.com', 'adminpass', 'admin'),
-('Librarian Jane', 'librarian@unilib.com', 'librarianpass', 'librarian'),
-('Student John', 'student@unilib.com', 'studentpass', 'student');
+('Admin User', 'admin@unilib.com', '$2y$10$ZxU1nMeytH4OqI6o1kFtWe4F74rhNv8r2cH4mGpQz.F88B7eTDWmi', 'admin'),
+('Librarian Jane', 'librarian@unilib.com', '$2y$10$kL0yBRGu8n7.0cPZh7ZcKe1akRJMDPv6wCD.qmyI6ATv5dcOih0.2', 'librarian'),
+('Student John', 'student@unilib.com', '$2y$10$9Fd2Kc9vns1O0aAt4KQZCeFFzUvT2piYkDaOr5RrJInm2wcPK5gOu', 'student');
 
--- Add sample books
 INSERT INTO books (title, author, subject) VALUES
 ('Harry Potter and the Philosopher\'s Stone', 'J.K. Rowling', 'Fantasy'),
 ('The Hobbit', 'J.R.R. Tolkien', 'Fantasy'),
