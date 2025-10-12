@@ -12,15 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Include DB config
-require_once __DIR__ . "/../Config/config.php";  // capital C!
+require_once __DIR__ . "/../Config/config.php";
 $conn = getDbConnection();
 
-$action = $_GET['action'] ?? '';
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+$action   = $_GET['action'] ?? '';
+$user_id  = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
 
-// ===============================
-// 🔒 ADMIN-ONLY ACCESS CHECK
-// ===============================
+// 🔒 Admin check
 if (!$user_id) {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "Missing user_id"]);
@@ -50,14 +48,14 @@ if ($role !== 'admin') {
 // ===============================
 switch ($action) {
 
-    // 📈 REPORT 1: LIBRARY USAGE SUMMARY
+    // 📈 USAGE SUMMARY
     case 'usage':
         $queries = [
-            "total_users" => "SELECT COUNT(*) AS count FROM users",
-            "total_books" => "SELECT COUNT(*) AS count FROM books",
-            "active_loans" => "SELECT COUNT(*) AS count FROM loans WHERE returned=0",
-            "reservations" => "SELECT COUNT(*) AS count FROM reservations",
-            "unpaid_fines" => "SELECT COUNT(*) AS count FROM fines WHERE paid=0"
+            "total_users"   => "SELECT COUNT(*) AS count FROM users",
+            "total_books"   => "SELECT COUNT(*) AS count FROM books",
+            "active_loans"  => "SELECT COUNT(*) AS count FROM loans WHERE returned=0",
+            "reservations"  => "SELECT COUNT(*) AS count FROM reservations",
+            "unpaid_fines"  => "SELECT COUNT(*) AS count FROM fines WHERE paid=0"
         ];
 
         $report = [];
@@ -69,12 +67,11 @@ switch ($action) {
         echo json_encode(["status" => "success", "report" => $report]);
         break;
 
-    // 📅 REPORT 2: OVERDUE LOANS
+    // 📅 OVERDUE LOANS
     case 'overdue':
         $today = date("Y-m-d");
-
         $stmt = $conn->prepare("
-            SELECT l.id AS loan_id, u.name AS user_name, u.email, b.title AS book_title, 
+            SELECT l.id AS loan_id, u.name AS user_name, u.email, b.title AS book_title,
                    l.due_date, l.returned
             FROM loans l
             JOIN users u ON l.user_id = u.id
@@ -86,10 +83,10 @@ switch ($action) {
         $stmt->execute();
         $overdue = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        echo json_encode(["status" => "success", "overdue" => $overdue]);
+        echo json_encode(["status" => "success", "report" => $overdue]);
         break;
 
-    // 📚 REPORT 3: MOST POPULAR BOOKS
+    // 📚 POPULAR BOOKS
     case 'popular_books':
         $sql = "
             SELECT b.title, COUNT(l.id) AS borrow_count
@@ -102,27 +99,53 @@ switch ($action) {
         $result = $conn->query($sql);
         $popular = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-        echo json_encode(["status" => "success", "popular_books" => $popular]);
+        echo json_encode(["status" => "success", "report" => $popular]);
         break;
 
-    // 👤 REPORT 4: USER ACTIVITY (Loans + Fines)
+    // 👤 USER ACTIVITY
     case 'user_activity':
+        $targetUserId = isset($_GET['target_user_id']) ? intval($_GET['target_user_id']) : null;
+        if (!$targetUserId) {
+            echo json_encode(["status" => "error", "message" => "Missing target_user_id"]);
+            exit;
+        }
+
+        // Fetch loan count and unpaid fines for target user
         $stmt = $conn->prepare("SELECT COUNT(*) AS total_loans FROM loans WHERE user_id = ?");
-        $stmt->bind_param("i", $user_id);
+        $stmt->bind_param("i", $targetUserId);
         $stmt->execute();
-        $loan_count = $stmt->get_result()->fetch_assoc()['total_loans'];
+        $loan_count = $stmt->get_result()->fetch_assoc()['total_loans'] ?? 0;
 
         $stmt = $conn->prepare("SELECT COALESCE(SUM(amount), 0) AS total_fines FROM fines WHERE user_id = ? AND paid = 0");
-        $stmt->bind_param("i", $user_id);
+        $stmt->bind_param("i", $targetUserId);
         $stmt->execute();
-        $fine_total = $stmt->get_result()->fetch_assoc()['total_fines'];
+        $fine_total = $stmt->get_result()->fetch_assoc()['total_fines'] ?? 0;
+
+        // Fetch recent loans with book titles
+        $stmt = $conn->prepare("
+            SELECT b.title AS book_title, l.loan_date, l.due_date, 
+                   CASE 
+                       WHEN l.returned = 1 THEN 'Returned'
+                       WHEN l.due_date < CURDATE() THEN 'Overdue'
+                       ELSE 'Borrowed'
+                   END AS status
+            FROM loans l
+            JOIN books b ON l.book_id = b.id
+            WHERE l.user_id = ?
+            ORDER BY l.loan_date DESC
+            LIMIT 10
+        ");
+        $stmt->bind_param("i", $targetUserId);
+        $stmt->execute();
+        $loan_history = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
         echo json_encode([
             "status" => "success",
-            "user_activity" => [
-                "user_id" => $user_id,
-                "total_loans" => $loan_count,
-                "unpaid_fines" => $fine_total
+            "report" => [
+                "user_id"      => $targetUserId,
+                "total_loans"  => $loan_count,
+                "unpaid_fines" => $fine_total,
+                "loan_history" => $loan_history
             ]
         ]);
         break;

@@ -26,7 +26,7 @@ async function getUsageReport() {
     const res = await fetch(`${API_BASE}/reports.php?action=usage&user_id=${user.id}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    renderJson("usageReport", data.data || data);
+    renderJson("usageReport", data.report || data);
   } catch (err) {
     document.getElementById("usageReport").innerHTML = `<p>Error: ${err.message}</p>`;
   }
@@ -38,7 +38,7 @@ async function getOverdue() {
     const res = await fetch(`${API_BASE}/reports.php?action=overdue&user_id=${user.id}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    renderJson("overdueList", data.data || data);
+    renderJson("overdueList", data.report || data);
   } catch (err) {
     document.getElementById("overdueList").innerHTML = `<p>Error: ${err.message}</p>`;
   }
@@ -50,7 +50,7 @@ async function getPopular() {
     const res = await fetch(`${API_BASE}/reports.php?action=popular_books&user_id=${user.id}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    renderJson("popularBooks", data.data || data);
+    renderJson("popularBooks", data.report || data);
   } catch (err) {
     document.getElementById("popularBooks").innerHTML = `<p>Error: ${err.message}</p>`;
   }
@@ -70,78 +70,111 @@ async function getUserActivity() {
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    renderJson("userActivity", data.data || data);
+
+    const activity = data.report || data;
+    const container = document.getElementById("userActivity");
+    container.innerHTML = "";
+
+    // Summary
+    const summaryTable = `
+      <table class="report-table">
+        <tr><th>User ID</th><td>${activity.user_id}</td></tr>
+        <tr><th>Total Loans</th><td>${activity.total_loans}</td></tr>
+        <tr><th>Unpaid Fines</th><td>${activity.unpaid_fines}</td></tr>
+      </table>
+    `;
+
+    // Loan history
+    let historyHTML = "";
+    if (activity.loan_history && activity.loan_history.length > 0) {
+      historyHTML = `
+        <h3>Loan History</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Book Title</th>
+              <th>Loan Date</th>
+              <th>Due Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activity.loan_history
+              .map(
+                (loan) => `
+              <tr class="${loan.status.toLowerCase()}">
+                <td>${loan.book_title}</td>
+                <td>${loan.loan_date}</td>
+                <td>${loan.due_date}</td>
+                <td>${loan.status}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>`;
+    } else {
+      historyHTML = "<p>No loan history found for this user.</p>";
+    }
+
+    container.innerHTML = summaryTable + historyHTML;
   } catch (err) {
     document.getElementById("userActivity").innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }
 
-// ==================== HELPER ====================
+// ==================== TABLE RENDERER ====================
 function renderJson(containerId, data) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
 
-  // Unwrap nested "report" object if present
-  const content = data.report || data.reports || data.data || data;
+  const content = data.report || data.data || data;
 
-  // If it's an object (like {total_users, total_books})
-  if (typeof content === "object" && !Array.isArray(content)) {
-    const table = document.createElement("table");
-    table.border = "1";
-    const tbody = document.createElement("tbody");
-
-    for (const [key, value] of Object.entries(content)) {
-      const row = document.createElement("tr");
-      const cellKey = document.createElement("td");
-      const cellValue = document.createElement("td");
-
-      cellKey.textContent = key.replace(/_/g, " ").toUpperCase();
-      cellValue.textContent = value;
-
-      row.appendChild(cellKey);
-      row.appendChild(cellValue);
-      tbody.appendChild(row);
-    }
-
-    table.appendChild(tbody);
-    container.appendChild(table);
+  if (!content) {
+    container.innerHTML = "<p>No data available.</p>";
+    return;
   }
 
-  // If it's an array (like list of books or users)
-  else if (Array.isArray(content)) {
+  // Object-based data
+  if (typeof content === "object" && !Array.isArray(content)) {
+    const table = `
+      <table class="report-table">
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody>
+          ${Object.entries(content)
+            .map(
+              ([key, val]) =>
+                `<tr><td>${key.replace(/_/g, " ").toUpperCase()}</td><td>${val}</td></tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>`;
+    container.innerHTML = table;
+    return;
+  }
+
+  // Array-based data
+  if (Array.isArray(content)) {
     if (content.length === 0) {
-      container.innerHTML = "<p>No data available.</p>";
+      container.innerHTML = "<p>No data found.</p>";
       return;
     }
 
-    const table = document.createElement("table");
-    table.border = "1";
-
-    // Headers
-    const header = document.createElement("tr");
-    Object.keys(content[0]).forEach(key => {
-      const th = document.createElement("th");
-      th.textContent = key.replace(/_/g, " ").toUpperCase();
-      header.appendChild(th);
-    });
-    table.appendChild(header);
-
-    // Rows
-    content.forEach(rowData => {
-      const row = document.createElement("tr");
-      Object.values(rowData).forEach(val => {
-        const td = document.createElement("td");
-        td.textContent = val ?? "-";
-        row.appendChild(td);
-      });
-      table.appendChild(row);
-    });
-
-    container.appendChild(table);
+    const headers = Object.keys(content[0]);
+    const table = `
+      <table class="report-table">
+        <thead><tr>${headers.map((h) => `<th>${h.replace(/_/g, " ").toUpperCase()}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${content
+            .map(
+              (row) =>
+                `<tr>${headers.map((h) => `<td>${row[h] ?? "-"}</td>`).join("")}</tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>`;
+    container.innerHTML = table;
+    return;
   }
 
-  // Fallback for text or unknown
-  else {
-    container.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-  }
+  container.innerHTML = `<pre>${JSON.stringify(content, null, 2)}</pre>`;
 }
