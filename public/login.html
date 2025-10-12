@@ -2,15 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Login</title>
+  <title>Login | UniLib</title>
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Ensures the nav appears at the top-right */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: #f8f8f8;
+      border-bottom: 1px solid #ddd;
+    }
+
+    nav a {
+      margin-left: 1rem;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <header><h1>Login</h1></header>
-  <nav>
+  <header>
+    <h1>Login</h1>
+    <nav>
       <a href="index.html">Home</a>
       <a href="register.html">Register</a>
     </nav>
+  </header>
   <main class="card">
   <form id="loginForm" onsubmit="event.preventDefault(); loginUser();">
   <label for="loginEmail">Email</label>
