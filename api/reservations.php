@@ -34,6 +34,22 @@ switch ($action) {
         $user_id = intval($data['user_id']);
         $book_id = intval($data['book_id']);
 
+        // Check if book exists
+        $checkBook = $conn->prepare("SELECT id, copies FROM books WHERE id = ?");
+        $checkBook->bind_param("i", $book_id);
+        $checkBook->execute();
+        $book = $checkBook->get_result()->fetch_assoc();
+        if (!$book) {
+            echo json_encode(["status" => "error", "message" => "Book not found"]);
+            exit;
+        }
+
+        // Prevent reservation if copies are available (should borrow instead)
+        if ($book['copies'] > 0) {
+            echo json_encode(["status" => "error", "message" => "Book is available — please borrow it instead."]);
+            exit;
+        }
+
         // Check if already reserved
         $stmt = $conn->prepare("SELECT id FROM reservations WHERE user_id=? AND book_id=? AND status='active'");
         $stmt->bind_param("ii", $user_id, $book_id);
@@ -41,7 +57,7 @@ switch ($action) {
         $check = $stmt->get_result();
 
         if ($check->num_rows > 0) {
-            echo json_encode(["status" => "error", "message" => "Book already reserved by this user"]);
+            echo json_encode(["status" => "error", "message" => "You already have an active reservation for this book."]);
             exit;
         }
 
@@ -65,24 +81,32 @@ switch ($action) {
         $user_id = $_GET['user_id'] ?? null;
 
         if ($user_id) {
-            $stmt = $conn->prepare("SELECT reservations.*, books.title AS book_title
-                                    FROM reservations
-                                    JOIN books ON reservations.book_id = books.id
-                                    WHERE reservations.user_id = ?
-                                    ORDER BY reservations.reservation_date DESC");
+            $stmt = $conn->prepare("
+                SELECT r.*, b.title AS book_title, b.author, b.subject
+                FROM reservations r
+                JOIN books b ON r.book_id = b.id
+                WHERE r.user_id = ?
+                ORDER BY r.reservation_date DESC
+            ");
             $stmt->bind_param("i", $user_id);
             $stmt->execute();
             $result = $stmt->get_result();
         } else {
-            $result = $conn->query("SELECT reservations.*, users.name AS user_name, books.title AS book_title
-                                    FROM reservations
-                                    JOIN users ON reservations.user_id = users.id
-                                    JOIN books ON reservations.book_id = books.id
-                                    ORDER BY reservations.reservation_date DESC");
+            $result = $conn->query("
+                SELECT r.*, u.name AS user_name, b.title AS book_title
+                FROM reservations r
+                JOIN users u ON r.user_id = u.id
+                JOIN books b ON r.book_id = b.id
+                ORDER BY r.reservation_date DESC
+            ");
         }
 
         $reservations = [];
         while ($row = $result->fetch_assoc()) {
+            // Friendly message for fulfilled reservations
+            if ($row['status'] === 'fulfilled') {
+                $row['note'] = "Your reserved book is now available to borrow!";
+            }
             $reservations[] = $row;
         }
 
@@ -113,6 +137,7 @@ switch ($action) {
 
     // ===============================
     // ✅ MARK RESERVATION AS FULFILLED
+    // (done automatically by loans.php)
     // ===============================
     case "fulfill":
         if (!isset($data['reservation_id'])) {
@@ -143,4 +168,5 @@ switch ($action) {
 
 $conn->close();
 ?>
+
 

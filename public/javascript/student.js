@@ -1,7 +1,6 @@
 const API_BASE = window.location.origin + "/api";
 const user = JSON.parse(localStorage.getItem("user"));
 
-// Redirect if not logged in or wrong role
 if (!user || user.role !== "student") {
   alert("Access denied. Please login as a student.");
   window.location.href = "login.html";
@@ -9,6 +8,10 @@ if (!user || user.role !== "student") {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("welcomeMessage").innerText = `Welcome, ${user.name}!`;
+  loadBooks();
+  getLoans();
+  getReservations();
+  getFines();
 });
 
 // ==================== LOGOUT ====================
@@ -17,130 +20,240 @@ function logout() {
   window.location.href = "login.html";
 }
 
-// ==================== BROWSE / SEARCH BOOKS ====================
-async function listAllBooks() {
+// ==================== BOOKS ====================
+async function loadBooks() {
   try {
     const res = await fetch(`${API_BASE}/books.php?action=list`);
+    if (!res.ok) throw new Error("Failed to load books");
     const data = await res.json();
-    renderBooks(data.books || []);
+
+    const container = document.getElementById("booksList");
+    container.innerHTML = "";
+
+    if (!data.books || data.books.length === 0) {
+      container.innerHTML = "<p>No books found.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.border = "1";
+    const header = document.createElement("tr");
+    ["Title", "Author", "Subject", "Copies", "Action"].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    data.books.forEach(b => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${b.title}</td>
+        <td>${b.author || "-"}</td>
+        <td>${b.subject || "-"}</td>
+        <td>${b.copies}</td>
+        <td>
+          ${
+            b.copies > 0
+              ? `<button onclick="borrowBook(${b.id})">Borrow</button>`
+              : `<button onclick="reserveBook(${b.id})">Reserve</button>`
+          }
+        </td>
+      `;
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
   } catch (err) {
-    document.getElementById("booksList").innerHTML = `<p>Error loading books: ${err.message}</p>`;
+    document.getElementById("booksList").innerHTML = `<p>Error: ${err.message}</p>`;
   }
 }
 
-async function searchBooks() {
-  const query = document.getElementById("searchQuery").value.trim();
-  if (!query) return listAllBooks();
-
-  try {
-    const res = await fetch(`${API_BASE}/books.php?action=search&query=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    renderBooks(data.books || []);
-  } catch (err) {
-    document.getElementById("booksList").innerHTML = `<p>Error searching books: ${err.message}</p>`;
-  }
-}
-
-function renderBooks(books) {
-  const container = document.getElementById("booksList");
-  if (!books.length) {
-    container.innerHTML = "<p>No books found.</p>";
-    return;
-  }
-
-  container.innerHTML = `
-    <table class="report-table">
-      <thead>
-        <tr>
-          <th>Title</th><th>Author</th><th>Subject</th><th>Available</th><th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${books
-          .map(
-            (b) => `
-          <tr>
-            <td>${b.title}</td>
-            <td>${b.author || "-"}</td>
-            <td>${b.subject || "-"}</td>
-            <td>${b.available ? "✅" : "❌"}</td>
-            <td>${
-              b.available
-                ? `<button onclick="borrowBook(${b.id})">Borrow</button>`
-                : `<button disabled>Unavailable</button>`
-            }</td>
-          </tr>`
-          )
-          .join("")}
-      </tbody>
-    </table>
-  `;
-}
-
-// ==================== BORROW BOOK ====================
 async function borrowBook(bookId) {
-  if (!confirm("Borrow this book?")) return;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 14);
 
   try {
     const res = await fetch(`${API_BASE}/loans.php?action=borrow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user.id, book_id: bookId })
+      body: JSON.stringify({
+        user_id: user.id,
+        book_id: bookId,
+        due_date: dueDate.toISOString().split("T")[0]
+      })
     });
 
     const data = await res.json();
-    alert(data.message || "Book borrowed!");
-    listAllBooks();
+    alert(data.message);
+    loadBooks();
     getLoans();
   } catch (err) {
     alert("Error borrowing book: " + err.message);
   }
 }
 
+async function reserveBook(bookId) {
+  if (!confirm("This book is currently unavailable. Reserve it for later?")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/reservations.php?action=reserve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: user.id, book_id: bookId })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+    getReservations();
+  } catch (err) {
+    alert("Error reserving book: " + err.message);
+  }
+}
+
 // ==================== LOANS ====================
 async function getLoans() {
-  const res = await fetch(`${API_BASE}/loans.php?action=list&user_id=${user.id}`);
-  const data = await res.json();
-  renderTable("loansList", data.loans || []);
+  try {
+    const res = await fetch(`${API_BASE}/loans.php?action=list&user_id=${user.id}`);
+    const data = await res.json();
+
+    const container = document.getElementById("loansList");
+    container.innerHTML = "";
+
+    if (!data.loans || data.loans.length === 0) {
+      container.innerHTML = "<p>No current loans.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.border = "1";
+    const header = document.createElement("tr");
+    ["Book", "Loan Date", "Due Date", "Status", "Action"].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    data.loans.forEach(l => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${l.book_title}</td>
+        <td>${l.loan_date}</td>
+        <td>${l.due_date}</td>
+        <td>${l.status}</td>
+        <td>
+          ${l.returned == 0 ? `<button onclick="returnBook(${l.id})">Return</button>` : "-"}
+        </td>
+      `;
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
+  } catch (err) {
+    document.getElementById("loansList").innerHTML = `<p>Error: ${err.message}</p>`;
+  }
+}
+
+async function returnBook(loanId) {
+  try {
+    const res = await fetch(`${API_BASE}/loans.php?action=return`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loan_id: loanId })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+    getLoans();
+    loadBooks();
+  } catch (err) {
+    alert("Error returning book: " + err.message);
+  }
 }
 
 // ==================== RESERVATIONS ====================
 async function getReservations() {
-  const res = await fetch(`${API_BASE}/reservations.php?action=list&user_id=${user.id}`);
-  const data = await res.json();
-  renderTable("reservationsList", data.reservations || []);
+  try {
+    const res = await fetch(`${API_BASE}/reservations.php?action=list&user_id=${user.id}`);
+    const data = await res.json();
+
+    const container = document.getElementById("reservationsList");
+    container.innerHTML = "";
+
+    if (!data.reservations || data.reservations.length === 0) {
+      container.innerHTML = "<p>No reservations found.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.border = "1";
+    const header = document.createElement("tr");
+    ["Book", "Date", "Status"].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    data.reservations.forEach(r => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${r.book_title}</td>
+    <td>${r.reservation_date}</td>
+    <td>${r.status}</td>
+    <td>
+      ${r.status === "fulfilled"
+        ? `<button onclick="borrowBook(${r.book_id})">Borrow Now</button>`
+        : ""}
+    </td>
+  `;
+  table.appendChild(row);
+  });
+
+
+    container.appendChild(table);
+  } catch (err) {
+    document.getElementById("reservationsList").innerHTML = `<p>Error: ${err.message}</p>`;
+  }
 }
 
 // ==================== FINES ====================
 async function getFines() {
-  const res = await fetch(`${API_BASE}/fines.php?action=list&user_id=${user.id}`);
-  const data = await res.json();
-  renderTable("finesList", data.fines || []);
-}
+  try {
+    const res = await fetch(`${API_BASE}/fines.php?action=list&user_id=${user.id}`);
+    const data = await res.json();
 
-// ==================== HELPER: RENDER TABLE ====================
-function renderTable(containerId, rows) {
-  const container = document.getElementById(containerId);
-  if (!rows || !rows.length) {
-    container.innerHTML = "<p>No records found.</p>";
-    return;
+    const container = document.getElementById("finesList");
+    container.innerHTML = "";
+
+    if (!data.fines || data.fines.length === 0) {
+      container.innerHTML = "<p>No fines.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.border = "1";
+    const header = document.createElement("tr");
+    ["Amount", "Status", "Created"].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    data.fines.forEach(f => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>$${f.amount}</td>
+        <td>${f.paid ? "Paid" : "Unpaid"}</td>
+        <td>${f.created_at}</td>
+      `;
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
+  } catch (err) {
+    document.getElementById("finesList").innerHTML = `<p>Error: ${err.message}</p>`;
   }
-
-  const headers = Object.keys(rows[0]);
-  const table = `
-    <table class="report-table">
-      <thead><tr>${headers.map((h) => `<th>${h.replace(/_/g, " ").toUpperCase()}</th>`).join("")}</tr></thead>
-      <tbody>
-        ${rows
-          .map(
-            (r) =>
-              `<tr>${headers
-                .map((h) => `<td>${r[h] ?? "-"}</td>`)
-                .join("")}</tr>`
-          )
-          .join("")}
-      </tbody>
-    </table>
-  `;
-  container.innerHTML = table;
 }
