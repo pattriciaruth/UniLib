@@ -79,5 +79,69 @@ async function getUserActivity() {
 // ==================== HELPER ====================
 function renderJson(containerId, data) {
   const container = document.getElementById(containerId);
-  container.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  container.innerHTML = "";
+
+  // Unwrap nested "report" object if present
+  const content = data.report || data.reports || data.data || data;
+
+  // If it's an object (like {total_users, total_books})
+  if (typeof content === "object" && !Array.isArray(content)) {
+    const table = document.createElement("table");
+    table.border = "1";
+    const tbody = document.createElement("tbody");
+
+    for (const [key, value] of Object.entries(content)) {
+      const row = document.createElement("tr");
+      const cellKey = document.createElement("td");
+      const cellValue = document.createElement("td");
+
+      cellKey.textContent = key.replace(/_/g, " ").toUpperCase();
+      cellValue.textContent = value;
+
+      row.appendChild(cellKey);
+      row.appendChild(cellValue);
+      tbody.appendChild(row);
+    }
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+
+  // If it's an array (like list of books or users)
+  else if (Array.isArray(content)) {
+    if (content.length === 0) {
+      container.innerHTML = "<p>No data available.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.border = "1";
+
+    // Headers
+    const header = document.createElement("tr");
+    Object.keys(content[0]).forEach(key => {
+      const th = document.createElement("th");
+      th.textContent = key.replace(/_/g, " ").toUpperCase();
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    // Rows
+    content.forEach(rowData => {
+      const row = document.createElement("tr");
+      Object.values(rowData).forEach(val => {
+        const td = document.createElement("td");
+        td.textContent = val ?? "-";
+        row.appendChild(td);
+      });
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
+  }
+
+  // Fallback for text or unknown
+  else {
+    container.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  }
 }
